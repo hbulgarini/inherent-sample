@@ -1,5 +1,6 @@
 //! Service and ServiceFactory implementation. Specialized wrapper over substrate service.
 
+use log;
 use node_template_runtime::{self, opaque::Block, RuntimeApi};
 use sc_client_api::BlockBackend;
 use sc_consensus_aura::{ImportQueueParams, SlotProportion, StartAuraParams};
@@ -8,7 +9,7 @@ pub use sc_executor::NativeElseWasmExecutor;
 use sc_service::{error::Error as ServiceError, Configuration, TaskManager, WarpSyncParams};
 use sc_telemetry::{Telemetry, TelemetryWorker};
 use sp_consensus_aura::sr25519::AuthorityPair as AuraPair;
-use std::{sync::Arc, time::Duration};
+use std::{fmt::Debug, sync::Arc, time::Duration};
 
 // Our native executor instance.
 pub struct ExecutorDispatch;
@@ -111,6 +112,8 @@ pub fn new_partial(
 				let timestamp = sp_timestamp::InherentDataProvider::from_system_time();
 
 				let os_value = sp_os_reader::InherentDataProvider::from_current_os_value();
+
+				log::info!("import_queue os_value: {:?}", os_value);
 
 				let slot =
 					sp_consensus_aura::inherents::InherentDataProvider::from_timestamp_and_slot_duration(

@@ -16,12 +16,16 @@ mod benchmarking;
 pub mod weights;
 use sp_os_reader::{InherentError, InherentType, INHERENT_IDENTIFIER};
 pub use sp_std::result;
+use sp_std::{ops::Deref, vec::Vec};
 pub use weights::*;
 
 #[frame_support::pallet]
 pub mod pallet {
 	use super::*;
-	use frame_support::pallet_prelude::{ValueQuery, *};
+	use frame_support::{
+		log::info,
+		pallet_prelude::{ValueQuery, *},
+	};
 	use frame_system::pallet_prelude::*;
 
 	#[pallet::pallet]
@@ -93,12 +97,14 @@ pub mod pallet {
 		const INHERENT_IDENTIFIER: InherentIdentifier = INHERENT_IDENTIFIER;
 
 		fn create_inherent(data: &InherentData) -> Option<Self::Call> {
+			info!("pallet ProvideInherent create_inherent called");
 			let inherent_data = data
 				.get_data::<InherentType>(&INHERENT_IDENTIFIER)
 				.expect("Os Reader inherent data not correctly encoded")
 				.expect("Os Reader inherent data must be provided");
-
-			Some(Call::set_os_value { os_value: inherent_data.to_vec() })
+			let data = inherent_data.deref();
+			info!("pallet ProvideInherent create_inherent: {:?}",data);
+			Some(Call::set_os_value { os_value: data.to_vec() })
 		}
 
 		fn check_inherent(

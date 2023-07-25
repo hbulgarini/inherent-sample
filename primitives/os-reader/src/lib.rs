@@ -20,9 +20,10 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
 use codec::{Decode, Encode};
+#[cfg(feature = "std")]
+pub use log;
 use sp_inherents::{InherentData, InherentIdentifier, IsFatalError};
 use sp_std::vec::Vec;
-
 #[cfg(feature = "std")]
 use std::process::Command;
 
@@ -35,7 +36,7 @@ pub type InherentType = OsReader;
 /// Unit type wrapper that represents a timestamp.
 ///
 /// Such a timestamp is the time since the UNIX_EPOCH in milliseconds at a given point in time.
-#[derive(Debug, Encode, Decode, Clone, Default)]
+#[derive(sp_runtime::RuntimeDebug, Encode, Decode, Clone, Default)]
 pub struct OsReader(Vec<u8>);
 
 impl OsReader {
@@ -45,14 +46,16 @@ impl OsReader {
 	}
 
 	#[cfg(feature = "std")]
-	pub fn current_value() -> Self {
+	pub fn current_value() -> Vec<u8> {
 		let output = Command::new("cat")
-			.arg("./os_value.txt")
+			.arg("os_value.txt")
 			.output()
 			.expect("failed to execute command");
+
 		let output = String::from_utf8_lossy(&output.stdout);
 		let output = output.trim();
-		Self(output.into())
+		log::info!("OsReader current_value output: {:?}", output);
+		output.into()
 	}
 }
 
@@ -122,15 +125,16 @@ impl InherentError {
 /// Auxiliary trait to extract timestamp inherent data.
 pub trait OsReaderInherentData {
 	/// Get timestamp inherent data.
-	fn timestamp_inherent_data(&self) -> Result<Option<InherentType>, sp_inherents::Error>;
+	fn osreader_inherent_data(&self) -> Result<Option<InherentType>, sp_inherents::Error>;
 }
 
 impl OsReaderInherentData for InherentData {
-	fn timestamp_inherent_data(&self) -> Result<Option<InherentType>, sp_inherents::Error> {
+	fn osreader_inherent_data(&self) -> Result<Option<InherentType>, sp_inherents::Error> {
 		self.get_data(&INHERENT_IDENTIFIER)
 	}
 }
 
+#[derive(Debug)]
 /// Provide duration since unix epoch in millisecond for timestamp inherent.
 #[cfg(feature = "std")]
 pub struct InherentDataProvider {
@@ -141,12 +145,19 @@ pub struct InherentDataProvider {
 impl InherentDataProvider {
 	/// Create `Self` while using the system time to get the timestamp.
 	pub fn from_current_os_value() -> Self {
-		Self { os_value: OsReader::current_value() }
+		log::info!("from_current_os_value called");
+		let os_value = OsReader::current_value();
+		println!("os_value: {:?}", os_value);
+		log::info!("os_value: {:?}", os_value);
+
+		Self { os_value: os_value.into() }
 	}
 
 	/// Create `Self` using the given `timestamp`.
 	pub fn new() -> Self {
-		Self { os_value: OsReader::current_value() }
+		let os_value = OsReader::current_value();
+		println!("os_value: {:?}", os_value);
+		Self { os_value: os_value.into() }
 	}
 
 	/// Returns the timestamp of this inherent data provider.
