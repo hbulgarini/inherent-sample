@@ -244,13 +244,15 @@ pub fn new_full(mut config: Configuration) -> Result<TaskManager, ServiceError> 
 				create_inherent_data_providers: move |_, ()| async move {
 					let timestamp = sp_timestamp::InherentDataProvider::from_system_time();
 
+					let os_value = sp_os_reader::InherentDataProvider::from_current_os_value();
+
 					let slot =
 						sp_consensus_aura::inherents::InherentDataProvider::from_timestamp_and_slot_duration(
 							*timestamp,
 							slot_duration,
 						);
 
-					Ok((slot, timestamp))
+					Ok((slot, timestamp, os_value))
 				},
 				force_authoring,
 				backoff_authoring_blocks,
